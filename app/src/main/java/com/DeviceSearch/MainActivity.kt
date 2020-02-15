@@ -1,6 +1,5 @@
-package com.example.devicesearch
+package com.DeviceSearch
 
-import android.bluetooth.BluetoothAdapter
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -11,11 +10,11 @@ import android.widget.AdapterView
 import android.widget.AdapterView.*
 import android.widget.ListView
 import android.widget.Toast
-import com.example.classes.BluetoothDeviceHolder
+import com.DeviceSearch.RealmObjects.BluetoothDevice
+import io.realm.Realm
+import io.realm.kotlin.where
 
 class MainActivity : AppCompatActivity() {
-
-    private var _bluetoothDevices: Array<BluetoothDeviceHolder> = arrayOf<BluetoothDeviceHolder>()
     private lateinit var _listView: ListView
     private lateinit var _adapter: BluetoothDeviceAdapter
     private lateinit var _appContext: Context
@@ -24,7 +23,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         _appContext = this
-
         setupViews()
         addEventHandlers()
     }
@@ -58,13 +56,18 @@ class MainActivity : AppCompatActivity() {
         _listView.adapter = _adapter
     }
 
-    private fun getBluetoothDevices (): Array<BluetoothDeviceHolder> {
-        var mBluetoothAdapter: BluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-        _bluetoothDevices = arrayOf<BluetoothDeviceHolder>()
-        var bluetoothDevices = mBluetoothAdapter.bondedDevices
-        for (bluetoothDevice in bluetoothDevices) {
-            _bluetoothDevices += BluetoothDeviceHolder(bluetoothDevice.name, bluetoothDevice.address)
+    private fun getBluetoothDevices(): Array<BluetoothDeviceHolder> {
+        var realm = Realm.getDefaultInstance()
+        var storedBluetoothDevices = realm.where<BluetoothDevice>().findAll()
+        var bluetoothDevices: Array<BluetoothDeviceHolder> = arrayOf()
+
+        for (bluetoothDevice in storedBluetoothDevices) {
+            bluetoothDevices += BluetoothDeviceHolder(
+                bluetoothDevice.Name + " - " + bluetoothDevice.Connected,
+                bluetoothDevice.MacAddress
+            )
         }
-        return _bluetoothDevices
+
+        return bluetoothDevices
     }
 }

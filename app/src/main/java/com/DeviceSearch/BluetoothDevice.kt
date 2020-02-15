@@ -1,4 +1,4 @@
-package com.example.classes
+package com.DeviceSearch
 
 class BluetoothDeviceHolder (val name: String, val address: String) {
     var _deviceName: String

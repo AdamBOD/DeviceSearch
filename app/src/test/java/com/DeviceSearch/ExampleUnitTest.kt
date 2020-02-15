@@ -1,4 +1,4 @@
-package com.example.devicesearch
+package com.DeviceSearch
 
 import org.junit.Test
 
