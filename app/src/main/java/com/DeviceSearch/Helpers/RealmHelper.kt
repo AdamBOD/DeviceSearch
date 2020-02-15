@@ -1,23 +1,19 @@
-package com.DeviceSearch
+package com.DeviceSearch.Helpers
 
-import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
-import android.location.LocationManager
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.core.content.ContextCompat.getSystemService
 import com.DeviceSearch.RealmObjects.BluetoothDevice
 import io.realm.Realm
 import io.realm.kotlin.where
-import java.time.LocalDateTime
-import java.util.*
 
 class RealmHelper {
      companion object Instance {
+         var creatingDevices: Boolean = false
          fun checkDevicesExist(connectedDevice: Array<BluetoothDevice>? = null) {
+             creatingDevices = true
              var realm = Realm.getDefaultInstance()
              var storedBluetoothDevices = realm.where<BluetoothDevice>().findAll().size
-             var bluetoothDevices = BluetoothHelper.getPairedBluetoothDevices()
+             var bluetoothDevices =
+                 BluetoothHelper.getPairedBluetoothDevices()
 
              if (storedBluetoothDevices == 0) {
                  // Disable Bluetooth so as to get connection states for initial device setup on re-enable
@@ -32,15 +28,19 @@ class RealmHelper {
                          .equalTo("MacAddress", bluetoothDevice.address).findAll().size
 
                      if (bluetoothDeviceExists == 0) {
-                         createNewDevice(bluetoothDevice)
+                         createNewDevice(
+                             bluetoothDevice
+                         )
                      }
                  }
 
                  BluetoothAdapter.getDefaultAdapter().enable()
              }
+             creatingDevices = false
          }
 
-         fun upsertDevice (bluetoothDevice: android.bluetooth.BluetoothDevice, connected: Boolean) {
+         fun upsertDevice (bluetoothDevice: android.bluetooth.BluetoothDevice, connected: Boolean)
+             :String {
              var realm = Realm.getDefaultInstance()
              var storedBluetoothDevice: BluetoothDevice? = realm.where<BluetoothDevice>()
                  .equalTo("MacAddress", bluetoothDevice.address).findFirst()
@@ -49,14 +49,19 @@ class RealmHelper {
                  realm.beginTransaction()
                  storedBluetoothDevice.Connected = connected
                  realm.commitTransaction()
+
+                 return storedBluetoothDevice.Id
              }
              else {
-                 createNewDevice(bluetoothDevice, connected)
+                 return createNewDevice(
+                     bluetoothDevice,
+                     connected
+                 )
              }
          }
 
          private fun createNewDevice (bluetoothDevice: android.bluetooth.BluetoothDevice,
-                               connected: Boolean = false){
+                               connected: Boolean = false): String {
              var realm = Realm.getDefaultInstance()
 
              val newBluetoothDevice = BluetoothDevice(
@@ -71,8 +76,8 @@ class RealmHelper {
              realm.beginTransaction()
              realm.copyToRealm(newBluetoothDevice)
              realm.commitTransaction()
+
+             return newBluetoothDevice.Id
          }
      }
-
-
  }

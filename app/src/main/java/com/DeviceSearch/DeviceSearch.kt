@@ -1,6 +1,7 @@
 package com.DeviceSearch
 
 import android.app.Application
+import com.DeviceSearch.Helpers.RealmHelper
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import com.facebook.stetho.Stetho
