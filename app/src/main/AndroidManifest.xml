@@ -35,6 +35,10 @@
             android:name=".Services.LocationService"
             android:enabled="true" />
 
+        <service
+            android:name=".Services.NotificationService"
+            android:enabled="true" />
+
         <receiver android:name="com.DeviceSearch.BroadcastReceivers.BluetoothReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.bluetooth.adapter.action.STATE_CHANGED"/>

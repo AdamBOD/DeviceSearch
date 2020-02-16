@@ -10,6 +10,7 @@ import com.DeviceSearch.Services.LocationService
 import androidx.core.content.ContextCompat.getSystemService
 import android.app.ActivityManager
 import com.DeviceSearch.Enums.BroadcastType
+import com.DeviceSearch.Services.NotificationService
 
 
 class BluetoothReceiver : BroadcastReceiver() {
@@ -21,18 +22,28 @@ class BluetoothReceiver : BroadcastReceiver() {
 
         if (bluetoothDevice != null) {
             if (intent?.action.equals("android.bluetooth.device.action.ACL_CONNECTED")) {
-                getLocation()
                 bluetoothDeviceId = RealmHelper.upsertDevice(bluetoothDevice, true)
                 connected = true
             }
             else if (intent?.action.equals("android.bluetooth.device.action.ACL_DISCONNECTED")) {
-                getLocation()
                 bluetoothDeviceId = RealmHelper.upsertDevice(bluetoothDevice, false)
                 connected = false
             }
 
             sendBroadcast(BroadcastType.DeviceUpdated, "device-updated",
                 bluetoothDeviceId as String, connected as Boolean)
+
+            var shouldNotify: Pair<Boolean, String> = RealmHelper.checkShouldNotify(bluetoothDeviceId)
+            if (shouldNotify.first) {
+                val serviceIntent = Intent(context, NotificationService::class.java)
+
+                var deviceState = if(connected!!) "Connected" else "Disconnected"
+                var deviceName = shouldNotify.second
+
+                serviceIntent.putExtra("title", "Device $deviceState")
+                serviceIntent.putExtra("message", "$deviceName has ${deviceState.toLowerCase()}")
+                context?.startService(serviceIntent)
+            }
         }
 
         if (!isMyServiceRunning(LocationService::class.java)) {
@@ -48,8 +59,12 @@ class BluetoothReceiver : BroadcastReceiver() {
 
     companion object Instance {
         private var _context: Context? = null
-        fun setContext (context: Context?) {
+        fun setContext(context: Context?) {
             _context = context
+        }
+
+        fun getContext(): Context? {
+            return _context as Context
         }
     }
 
@@ -79,9 +94,5 @@ class BluetoothReceiver : BroadcastReceiver() {
 
             LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
         }
-    }
-
-    private fun getLocation() {
-
     }
 }

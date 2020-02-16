@@ -1,9 +1,13 @@
 package com.DeviceSearch.Helpers
 
 import android.bluetooth.BluetoothAdapter
+import android.content.Intent
 import android.location.Location
 import android.location.LocationManager
+import com.DeviceSearch.BroadcastReceivers.BluetoothReceiver
 import com.DeviceSearch.RealmObjects.BluetoothDevice
+import com.DeviceSearch.Services.LocationService
+import com.DeviceSearch.Services.NotificationService
 import io.realm.Realm
 import io.realm.kotlin.where
 import java.util.*
@@ -85,6 +89,18 @@ class RealmHelper {
                  storedBluetoothDevice.NotifyOnConnectionChange = notifyOfChanges
                  realm.commitTransaction()
              }
+         }
+
+         fun checkShouldNotify (deviceId: String): Pair<Boolean, String> {
+             var realm = Realm.getDefaultInstance()
+             var storedBluetoothDevice: BluetoothDevice? = realm.where<BluetoothDevice>()
+                 .equalTo("Id", deviceId).findFirst()
+
+             if (storedBluetoothDevice != null) {
+                 return Pair<Boolean, String>(storedBluetoothDevice.NotifyOnConnectionChange!!, storedBluetoothDevice.Name)
+             }
+
+             return Pair<Boolean, String>(false, "")
          }
 
          private fun createNewDevice (bluetoothDevice: android.bluetooth.BluetoothDevice,
