@@ -1,10 +1,13 @@
 package com.DeviceSearch.Activities
 
-import android.bluetooth.BluetoothClass
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.*
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.ListView
+import androidx.core.app.ActivityCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.DeviceSearch.Adapters.BluetoothDeviceAdapter
 import com.DeviceSearch.Adapters.BluetoothDeviceHolder
@@ -13,15 +16,23 @@ import com.DeviceSearch.R
 import com.DeviceSearch.RealmObjects.BluetoothDevice
 import io.realm.Realm
 import io.realm.kotlin.where
+import android.os.Build
+
+
 
 class MainActivity : AppCompatActivity() {
     private lateinit var _listView: ListView
     private lateinit var _adapter: BluetoothDeviceAdapter
     private lateinit var _appContext: Context
 
+    private lateinit var _alarmManager: AlarmManager
+    private lateinit var _pendingIntent: PendingIntent
+
+    private var _permissionsGranted: Int = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(com.DeviceSearch.R.layout.activity_main)
         _appContext = this
         setupViews()
         addEventHandlers()
@@ -31,13 +42,14 @@ class MainActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
             IntentFilter("device-updated")
         )
+
+        setupPermissions()
     }
 
     private val mMessageReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            // Get extra data included in the Intent
             val id = intent.getStringExtra("id")
-            val connected = intent.getStringExtra("connected")
+            val connected = intent.getBooleanExtra("connected", false)
 
             _adapter.updateRow(id)
 
@@ -52,6 +64,33 @@ class MainActivity : AppCompatActivity() {
 
         _adapter = BluetoothDeviceAdapter(this, getBluetoothDevices())
         _listView.adapter = _adapter
+    }
+
+    private fun startAlarm() {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            _alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, 0, _pendingIntent)
+        }
+        else {
+            _alarmManager.set(AlarmManager.RTC_WAKEUP, 0, _pendingIntent)
+        }
+
+
+    }
+
+    private fun setupPermissions() {
+        if (applicationContext.checkSelfPermission(android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, android.Manifest.permission.ACCESS_FINE_LOCATION)) {
+                var test = "Test"
+            }
+            else {
+                ActivityCompat.requestPermissions(this,
+                    arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION,
+                            android.Manifest.permission.ACCESS_BACKGROUND_LOCATION),
+                    _permissionsGranted
+                )
+            }
+        }
     }
 
     private fun setupViews () {
@@ -83,7 +122,7 @@ class MainActivity : AppCompatActivity() {
         for (bluetoothDevice in storedBluetoothDevices) {
             bluetoothDevices += BluetoothDeviceHolder(
                 bluetoothDevice.Id,
-                bluetoothDevice.Name,
+                bluetoothDevice.Name + "   Long: " + bluetoothDevice.LastLongitude + "   Lat: " + bluetoothDevice.LastLatitude,
                 bluetoothDevice.Connected,
                 bluetoothDevice.DeviceType
             )

@@ -7,6 +7,7 @@ import io.realm.RealmConfiguration
 import com.facebook.stetho.Stetho
 import com.uphyca.stetho_realm.RealmInspectorModulesProvider
 
+
 class DeviceSearch: Application() {
     override fun onCreate() {
         super.onCreate()

@@ -11,8 +11,8 @@ open class BluetoothDevice (
     @Index var MacAddress: String = "",
     var DeviceType: Int = 0,
     var Connected: Boolean = false,
-    var LastLongitude: Long = 0L,
-    var LastLatitude: Long = 0L,
+    var LastLongitude: Double = 0.0,
+    var LastLatitude: Double = 0.0,
     var NotifyOnConnectionChange: Boolean = false,
     var LastUpdatedOn: Date = Calendar.getInstance().time
 ): RealmObject()

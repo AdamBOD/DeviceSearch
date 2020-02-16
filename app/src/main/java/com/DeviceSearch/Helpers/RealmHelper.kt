@@ -1,13 +1,17 @@
 package com.DeviceSearch.Helpers
 
 import android.bluetooth.BluetoothAdapter
+import android.location.Location
+import android.location.LocationManager
 import com.DeviceSearch.RealmObjects.BluetoothDevice
 import io.realm.Realm
 import io.realm.kotlin.where
+import java.util.*
 
 class RealmHelper {
      companion object Instance {
          var creatingDevices: Boolean = false
+
          fun checkDevicesExist(connectedDevice: Array<BluetoothDevice>? = null) {
              creatingDevices = true
              var realm = Realm.getDefaultInstance()
@@ -18,10 +22,6 @@ class RealmHelper {
              if (storedBluetoothDevices == 0) {
                  // Disable Bluetooth so as to get connection states for initial device setup on re-enable
                  BluetoothAdapter.getDefaultAdapter().disable()
-
-                 /*var locationManager: LocationManager = getSystemService(LOCATION_SERVICE) as LocationManager
-             var fusedClient = LocationServices.
-             var currentLocation = locationManager.getLastKnownLocation()*/
 
                  for (bluetoothDevice in bluetoothDevices) {
                      val bluetoothDeviceExists = realm.where<BluetoothDevice>()
@@ -48,6 +48,7 @@ class RealmHelper {
              if (storedBluetoothDevice != null) {
                  realm.beginTransaction()
                  storedBluetoothDevice.Connected = connected
+                 storedBluetoothDevice.LastUpdatedOn = Calendar.getInstance().time
                  realm.commitTransaction()
 
                  return storedBluetoothDevice.Id
@@ -60,6 +61,20 @@ class RealmHelper {
              }
          }
 
+         fun updateDeviceLocation (deviceId: String, longitude: Double, latitude: Double) {
+             var realm = Realm.getDefaultInstance()
+             var storedBluetoothDevice: BluetoothDevice? = realm.where<BluetoothDevice>()
+                 .equalTo("Id", deviceId).findFirst()
+
+             if (storedBluetoothDevice != null) {
+                 realm.beginTransaction()
+                 storedBluetoothDevice.LastLongitude = longitude
+                 storedBluetoothDevice.LastLatitude = latitude
+                 realm.commitTransaction()
+
+             }
+         }
+
          private fun createNewDevice (bluetoothDevice: android.bluetooth.BluetoothDevice,
                                connected: Boolean = false): String {
              var realm = Realm.getDefaultInstance()
@@ -69,8 +84,8 @@ class RealmHelper {
                  MacAddress = bluetoothDevice.address,
                  DeviceType = bluetoothDevice.bluetoothClass.deviceClass,
                  Connected = connected,
-                 LastLatitude = -52,
-                 LastLongitude = 58
+                 LastLatitude = 0.0,
+                 LastLongitude = 0.0
              )
 
              realm.beginTransaction()
