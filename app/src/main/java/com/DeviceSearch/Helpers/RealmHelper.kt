@@ -5,6 +5,7 @@ import android.content.Intent
 import android.location.Location
 import android.location.LocationManager
 import com.DeviceSearch.BroadcastReceivers.BluetoothReceiver
+import com.DeviceSearch.Enums.BroadcastType
 import com.DeviceSearch.RealmObjects.BluetoothDevice
 import com.DeviceSearch.Services.LocationService
 import com.DeviceSearch.Services.NotificationService
@@ -75,8 +76,15 @@ class RealmHelper {
                  storedBluetoothDevice.LastLongitude = longitude
                  storedBluetoothDevice.LastLatitude = latitude
                  realm.commitTransaction()
-
              }
+
+             BluetoothReceiver.sendBroadcast(
+                 BroadcastType.DeviceLocationUpdated,
+                 "device-location-updated",
+                 storedBluetoothDevice?.Id!!,
+                 longitude = longitude,
+                 latitude = latitude
+             )
          }
 
          fun updateDeviceNotificationSetting (deviceId: String, notifyOfChanges: Boolean) {

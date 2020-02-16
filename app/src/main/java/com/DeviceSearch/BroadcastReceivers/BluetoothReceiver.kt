@@ -66,6 +66,29 @@ class BluetoothReceiver : BroadcastReceiver() {
         fun getContext(): Context? {
             return _context as Context
         }
+
+        fun sendBroadcast(broadcastType: BroadcastType, intent: String, id: String, connected: Boolean = false, longitude: Double = 0.0, latitude: Double = 0.0) {
+            if (_context != null) {
+                val context = _context as Context
+                val intent = Intent(intent)
+                if (broadcastType == BroadcastType.DeviceUpdated) {
+                    if (!RealmHelper.creatingDevices) {
+                        intent.putExtra("id", id)
+                        intent.putExtra("connected", connected)
+                    }
+                }
+                else if (broadcastType == BroadcastType.DeviceLocationRequested) {
+                    intent.putExtra("deviceId", id)
+                }
+                else if (broadcastType == BroadcastType.DeviceLocationUpdated) {
+                    intent.putExtra("deviceId", id)
+                    intent.putExtra("longitude", longitude)
+                    intent.putExtra("latitude", latitude)
+                }
+
+                LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
+            }
+        }
     }
 
     private fun isMyServiceRunning(serviceClass: Class<*>): Boolean {
@@ -76,23 +99,5 @@ class BluetoothReceiver : BroadcastReceiver() {
             }
         }
         return false
-    }
-
-    private fun sendBroadcast(broadcastType: BroadcastType, intent: String, id: String, connected: Boolean = false) {
-        if (_context != null) {
-            val context = _context as Context
-            val intent = Intent(intent)
-            if (broadcastType == BroadcastType.DeviceUpdated) {
-                if (!RealmHelper.creatingDevices) {
-                    intent.putExtra("id", id)
-                    intent.putExtra("connected", connected)
-                }
-            }
-            else if (broadcastType == BroadcastType.DeviceLocationRequested) {
-                intent.putExtra("deviceId", id)
-            }
-
-            LocalBroadcastManager.getInstance(context).sendBroadcast(intent)
-        }
     }
 }

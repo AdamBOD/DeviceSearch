@@ -1,14 +1,13 @@
 package com.DeviceSearch.Activities
 
 import android.bluetooth.BluetoothClass
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.os.Bundle
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.DeviceSearch.Adapters.BluetoothDeviceAdapter
 import com.DeviceSearch.Helpers.RealmHelper
 import com.DeviceSearch.R
 import com.DeviceSearch.RealmObjects.BluetoothDevice
@@ -31,6 +30,14 @@ class DetailsActivity: AppCompatActivity(), OnMapReadyCallback{
 
     private var _device: BluetoothDevice? = null
 
+    private lateinit var _deviceNameTextView: TextView
+    private lateinit var _deviceIcon: ImageView
+    private lateinit var _deviceConnectedTextView: TextView
+    private lateinit var _deviceAddressTextView: TextView
+    private lateinit var _deviceLastUpdatedTextView: TextView
+
+    private lateinit var _map: GoogleMap
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_details)
@@ -41,9 +48,40 @@ class DetailsActivity: AppCompatActivity(), OnMapReadyCallback{
         var intent: Intent = getIntent()
         _deviceId = intent.getStringExtra("deviceId")
 
+        LocalBroadcastManager.getInstance(this).registerReceiver(deviceUpdatedReceiver,
+            IntentFilter("device-updated")
+        )
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(deviceLocationUpdatedReceiver,
+            IntentFilter("device-location-updated")
+        )
+
         setupViews()
 
         getData()
+    }
+
+    private val deviceUpdatedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val id = intent.getStringExtra("id")
+
+            if (id == _device?.Id) {
+                _device = getObject(id)
+                setupConnectedTextView()
+                setupLastUpdatedOnTextView(_device!!.LastUpdatedOn)
+            }
+        }
+    }
+
+    private val deviceLocationUpdatedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val id = intent.getStringExtra("deviceId")
+
+            if (id == _device?.Id && _map != null) {
+                _device = getObject(id)
+                getData()
+            }
+        }
     }
 
     private fun setupViews() {
@@ -52,36 +90,35 @@ class DetailsActivity: AppCompatActivity(), OnMapReadyCallback{
     }
 
     private fun getData() {
-        var realm = Realm.getDefaultInstance()
-        _device = realm.where<BluetoothDevice>().equalTo("Id", _deviceId).findFirst()
+        _device = getObject(_deviceId)
 
-        if (_device != null) {
+            if (_device != null) {
             populateData()
         }
+    }
+
+    private fun getObject(id: String): BluetoothDevice? {
+        var realm = Realm.getDefaultInstance()
+        var device = realm.where<BluetoothDevice>().equalTo("Id", id).findFirst()
+        return device
     }
 
     private fun populateData() {
         supportActionBar?.title = _device?.Name
 
-        val deviceNameTextView = findViewById<TextView>(R.id.device_name_textview)
-        val deviceIcon = findViewById<ImageView>(R.id.device_icon)
-        val deviceConnectedTextView = findViewById<TextView>(R.id.device_connected_textview)
-        val deviceAddressTextView = findViewById<TextView>(R.id.device_address_textview)
-        val deviceLastUpdatedTextView = findViewById<TextView>(R.id.device_last_updated_textview)
+        _deviceNameTextView = findViewById<TextView>(R.id.device_name_textview)
+        _deviceIcon = findViewById<ImageView>(R.id.device_icon)
+        _deviceConnectedTextView = findViewById<TextView>(R.id.device_connected_textview)
+        _deviceAddressTextView = findViewById<TextView>(R.id.device_address_textview)
+        _deviceLastUpdatedTextView = findViewById<TextView>(R.id.device_last_updated_textview)
         val copyAddressButton = findViewById<ImageButton>(R.id.copy_address_button)
         val deviceNotifySwitch = findViewById<Switch>(R.id.notification_switch)
 
-        deviceNameTextView.text = _device?.Name
+        _deviceNameTextView.text = _device?.Name
 
-        setIcon(deviceIcon, _device?.DeviceType as Int)
+        setIcon(_deviceIcon, _device?.DeviceType as Int)
 
-        if (_device?.Connected as Boolean) {
-            deviceConnectedTextView.setTextColor(applicationContext.resources.getColor(R.color.colorConnected))
-        }
-        else {
-            deviceConnectedTextView.setTextColor(applicationContext.resources.getColor(R.color.colorDisconnected))
-        }
-        deviceConnectedTextView.text = if(_device?.Connected!!) "Connected" else "Disconnected"
+        setupConnectedTextView()
 
         copyAddressButton.setOnClickListener {
             val clipboard: ClipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -94,12 +131,9 @@ class DetailsActivity: AppCompatActivity(), OnMapReadyCallback{
                 Toast.LENGTH_LONG).show()
         }
 
-        deviceAddressTextView.text = _device?.MacAddress
+        _deviceAddressTextView.text = _device?.MacAddress
 
-        val pattern = "dd/MM/yyyy hh:mm"
-        val simpleDateFormat = SimpleDateFormat(pattern)
-        val date = simpleDateFormat.format(_device?.LastUpdatedOn as Date)
-        deviceLastUpdatedTextView.text = date
+        setupLastUpdatedOnTextView(_device?.LastUpdatedOn!!)
 
         deviceNotifySwitch.isChecked = _device?.NotifyOnConnectionChange as Boolean
         deviceNotifySwitch.setOnCheckedChangeListener { buttonView, isChecked ->
@@ -114,15 +148,40 @@ class DetailsActivity: AppCompatActivity(), OnMapReadyCallback{
         mMapFragment.getMapAsync(this)
     }
 
+    private fun setupConnectedTextView() {
+        if (_device?.Connected as Boolean) {
+            _deviceConnectedTextView.setTextColor(applicationContext.resources.getColor(R.color.colorConnected))
+        }
+        else {
+            _deviceConnectedTextView.setTextColor(applicationContext.resources.getColor(R.color.colorDisconnected))
+        }
+        _deviceConnectedTextView.text = if(_device?.Connected!!) "Connected" else "Disconnected"
+    }
+
+    private fun setupLastUpdatedOnTextView(lastUpdatedOn: Date) {
+        val pattern = "dd/MM/yyyy hh:mm"
+        val simpleDateFormat = SimpleDateFormat(pattern)
+        val date = simpleDateFormat.format(lastUpdatedOn)
+        _deviceLastUpdatedTextView.text = date
+    }
+
     override fun onMapReady(map: GoogleMap?) {
+        if (map != null) {
+            _map = map!!
+            setupMap()
+        }
+    }
+
+    private fun setupMap() {
         if (_device?.LastLatitude != 0.0 && _device?.LastLongitude != 0.0) {
             var position = LatLng(_device?.LastLatitude as Double,
                 _device?.LastLongitude as Double)
-            map?.addMarker(MarkerOptions()
+
+            _map.addMarker(MarkerOptions()
                 .position(position))
 
             val update = CameraUpdateFactory.newLatLngZoom(position, 12.5F)
-            map?.moveCamera(update)
+            _map.moveCamera(update)
         }
     }
 
