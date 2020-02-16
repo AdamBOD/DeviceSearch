@@ -14,5 +14,6 @@ open class BluetoothDevice (
     var LastLongitude: Double = 0.0,
     var LastLatitude: Double = 0.0,
     var NotifyOnConnectionChange: Boolean = false,
-    var LastUpdatedOn: Date = Calendar.getInstance().time
+    var LastUpdatedOn: Date = Calendar.getInstance().time,
+    var CreatedOn: Date = Calendar.getInstance().time
 ): RealmObject()

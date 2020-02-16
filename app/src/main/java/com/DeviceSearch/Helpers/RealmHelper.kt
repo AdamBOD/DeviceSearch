@@ -75,6 +75,18 @@ class RealmHelper {
              }
          }
 
+         fun updateDeviceNotificationSetting (deviceId: String, notifyOfChanges: Boolean) {
+             var realm = Realm.getDefaultInstance()
+             var storedBluetoothDevice: BluetoothDevice? = realm.where<BluetoothDevice>()
+                 .equalTo("Id", deviceId).findFirst()
+
+             if (storedBluetoothDevice != null) {
+                 realm.beginTransaction()
+                 storedBluetoothDevice.NotifyOnConnectionChange = notifyOfChanges
+                 realm.commitTransaction()
+             }
+         }
+
          private fun createNewDevice (bluetoothDevice: android.bluetooth.BluetoothDevice,
                                connected: Boolean = false): String {
              var realm = Realm.getDefaultInstance()

@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Device Search</string>
     <string name="action_settings">Settings</string>
+    <string name="address_label">Address: </string>
+    <string name="last_updated_label">Last Updated On: </string>
+    <string name="notify_label">Notify me of changes</string>
 </resources>

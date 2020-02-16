@@ -17,7 +17,8 @@ import com.DeviceSearch.RealmObjects.BluetoothDevice
 import io.realm.Realm
 import io.realm.kotlin.where
 import android.os.Build
-
+import android.view.View
+import android.widget.AdapterView
 
 
 class MainActivity : AppCompatActivity() {
@@ -112,6 +113,21 @@ class MainActivity : AppCompatActivity() {
                 return true
             }
         }*/
+
+        _listView.onItemClickListener = object: AdapterView.OnItemClickListener {
+            override fun onItemClick(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                var item: BluetoothDeviceHolder = _adapter.getItem(position)
+                var intent: Intent = Intent(_appContext, DetailsActivity::class.java)
+                intent.putExtra("deviceId", item._id)
+
+                startActivity(intent)
+            }
+        }
     }
 
     private fun getBluetoothDevices(): Array<BluetoothDeviceHolder> {
@@ -122,7 +138,7 @@ class MainActivity : AppCompatActivity() {
         for (bluetoothDevice in storedBluetoothDevices) {
             bluetoothDevices += BluetoothDeviceHolder(
                 bluetoothDevice.Id,
-                bluetoothDevice.Name + "   Long: " + bluetoothDevice.LastLongitude + "   Lat: " + bluetoothDevice.LastLatitude,
+                bluetoothDevice.Name,
                 bluetoothDevice.Connected,
                 bluetoothDevice.DeviceType
             )
